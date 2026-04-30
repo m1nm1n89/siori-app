@@ -11,9 +11,9 @@
   --color-border-primary: #e8c97a;
   --color-border-secondary: #d4b896;
   --color-border-tertiary: #e8ddd0;
-  --color-text-primary: #3d2b1f;
-  --color-text-secondary: #8b7355;
-  --color-text-warning: #b8860b;
+  --color-text-primary: #111111;
+  --color-text-secondary: #222222;
+  --color-text-warning: #5a3e00;
   --font-serif: 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif;
 }
 
