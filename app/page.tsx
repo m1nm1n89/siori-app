@@ -1,65 +1,106 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import type { CSSProperties } from "react";
+import { supabase } from "@/lib/supabase";
+import type { ShioriData } from "@/lib/types";
+
+const uid = () => Math.random().toString(36).slice(2, 8);
+
+const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+const extractUuid = (s: string) => s.match(UUID_RE)?.[0] ?? null;
+
+export default function TopPage() {
+  const router = useRouter();
+  const [joinInput, setJoinInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const card: CSSProperties = {
+    background: "var(--color-background-primary)",
+    border: "2px dashed var(--color-border-secondary)",
+    borderRadius: 16, padding: "28px 24px", textAlign: "center",
+  };
+  const btn = (bg: string, op = 1): CSSProperties => ({
+    background: bg, color: "white", border: "none", borderRadius: 24,
+    padding: "12px 28px", fontSize: 15, fontWeight: 500, cursor: "pointer", opacity: op,
+  });
+
+  const doCreate = async () => {
+    setBusy(true);
+    setError("");
+    const id = crypto.randomUUID();
+    const d: ShioriData = {
+      id, title: "みんなの旅のしおり", dest: "", from: "", to: "",
+      members: [], days: [{ id: uid(), label: "1日目", events: [] }], packing: [], notes: "",
+    };
+    const { error: err } = await supabase
+      .from("shioris")
+      .insert({ id, data: JSON.stringify(d) });
+    if (err) {
+      setError("作成に失敗しました。しばらく待ってから再試行してください。");
+      setBusy(false);
+      return;
+    }
+    router.push(`/siori/${id}`);
+  };
+
+  const doJoin = async () => {
+    setError("");
+    const uuid = extractUuid(joinInput);
+    if (!uuid) { setError("有効なURLまたはUUIDを入力してください"); return; }
+    setBusy(true);
+    const { data: row } = await supabase
+      .from("shioris")
+      .select("id")
+      .eq("id", uuid)
+      .single();
+    if (!row) {
+      setError("しおりが見つかりませんでした😢 URLを確認してください");
+      setBusy(false);
+      return;
+    }
+    router.push(`/siori/${uuid}`);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'Hiragino Maru Gothic ProN','BIZ UDPGothic',sans-serif", background: "var(--color-background-tertiary)" }}>
+      <div style={{ textAlign: "center", marginBottom: 40 }}>
+        <div style={{ fontSize: 56, marginBottom: 8 }}>📔</div>
+        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 28, margin: "0 0 4px", letterSpacing: 4 }}>たびのしおり</h1>
+        <p style={{ color: "var(--color-text-secondary)", fontSize: 13, margin: 0 }}>🌸 みんなで作れる旅のしおりメーカー 🌸</p>
+      </div>
+      <div style={{ maxWidth: 400, width: "100%", display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={card}>
+          <div style={{ fontSize: 36, marginBottom: 8 }}>✏️</div>
+          <h2 style={{ margin: "0 0 16px", fontSize: 17 }}>あたらしく作る</h2>
+          <button onClick={doCreate} disabled={busy} style={btn("#ff8f00")}>
+            {busy ? "作成中..." : "しおりをつくる 🎒"}
+          </button>
+        </div>
+        <div style={card}>
+          <div style={{ fontSize: 36, marginBottom: 8 }}>🔗</div>
+          <h2 style={{ margin: "0 0 12px", fontSize: 17 }}>URLで参加する</h2>
+          <input
+            value={joinInput}
+            onChange={e => setJoinInput(e.target.value)}
+            placeholder="共有URLまたはUUIDを貼り付け"
+            style={{ width: "100%", marginBottom: 12, fontSize: 13, boxSizing: "border-box", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--color-border-secondary)" }}
+          />
+          <button onClick={doJoin} disabled={busy || !joinInput} style={btn("#6d9e4e", joinInput ? 1 : 0.5)}>
+            {busy ? "検索中..." : "参加する 🌸"}
+          </button>
+        </div>
+        {error && (
+          <p style={{ color: "#c62828", fontSize: 13, textAlign: "center", margin: 0, background: "#ffebee", padding: "8px 12px", borderRadius: 8 }}>
+            {error}
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        )}
+      </div>
+      <p style={{ color: "var(--color-text-secondary)", fontSize: 11, marginTop: 24, textAlign: "center" }}>
+        ⚠️ 個人情報の入力はお控えください。
+      </p>
     </div>
   );
 }

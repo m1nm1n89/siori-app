@@ -3,6 +3,18 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f5f0eb;
+  --color-background-tertiary: #fdf6ee;
+  --color-background-warning: #fff8e1;
+  --color-border-primary: #e8c97a;
+  --color-border-secondary: #d4b896;
+  --color-border-tertiary: #e8ddd0;
+  --color-text-primary: #3d2b1f;
+  --color-text-secondary: #8b7355;
+  --color-text-warning: #b8860b;
+  --font-serif: 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif;
 }
 
 @theme inline {
